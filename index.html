@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#171514">
+<title>Cave à vin</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<style>
+  :root{
+    --stone-950:#171514;
+    --stone-900:#211e1c;
+    --stone-800:#2b2724;
+    --stone-700:#3a342f;
+    --stone-600:#524a42;
+    --cream:#efe7d8;
+    --cream-dim:#b8ac97;
+    --bordeaux:#7c2d3c;
+    --bordeaux-light:#a8465a;
+    --gold:#c9a13a;
+    --gold-dim:#8a742f;
+    --ok:#5e8f6a;
+    --err:#b1503f;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--stone-950);
+    color:var(--cream);
+    font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    min-height:100vh;
+    min-height:100dvh;
+  }
+  .serif{ font-family:Georgia, "Iowan Old Style", "Palatino Linotype", serif; }
+
+  /* ---------- lock screen ---------- */
+  #lockScreen{
+    position:fixed; inset:0; z-index:100; background:var(--stone-950);
+    display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  .lock-box{ width:100%; max-width:320px; text-align:center; }
+  .lock-box .serif{ font-size:24px; display:block; margin-bottom:6px; }
+  .lock-sub{ color:var(--cream-dim); font-size:13px; margin-bottom:22px; }
+  .lock-box input{
+    width:100%; text-align:center; letter-spacing:2px; font-size:18px;
+    background:var(--stone-800); border:1px solid var(--stone-600); color:var(--cream);
+    padding:12px; border-radius:10px; margin-bottom:12px;
+  }
+  .lock-box button{ width:100%; padding:12px; border-radius:10px; font-size:15px; }
+  .lock-err{ color:var(--err); font-size:12.5px; height:16px; margin-bottom:4px; }
+
+  /* ---------- header ---------- */
+  header{
+    position:sticky; top:0; z-index:20;
+    background:linear-gradient(180deg, var(--stone-950) 70%, transparent);
+    padding:18px 16px 10px;
+    border-bottom:1px solid var(--stone-700);
+  }
+  .titlebar{display:flex; align-items:baseline; justify-content:space-between; gap:10px;}
+  h1{ font-size:22px; margin:0; font-weight:600; letter-spacing:.2px; }
+  .count{color:var(--cream-dim); font-size:13px; margin-top:2px;}
+  .status-row{display:flex; align-items:center; gap:8px; margin-top:10px; flex-wrap:wrap;}
+  .pill{
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:12px; padding:5px 10px; border-radius:20px;
+    border:1px solid var(--stone-600); color:var(--cream-dim);
+  }
+  .dot{width:7px; height:7px; border-radius:50%; background:var(--ok); flex:none;}
+
+  .actions{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;}
+  button{ font-family:inherit; cursor:pointer; border:none; }
+  .btn{
+    background:var(--stone-800); color:var(--cream);
+    border:1px solid var(--stone-600);
+    padding:8px 12px; border-radius:9px; font-size:13px;
+    display:inline-flex; align-items:center; gap:6px;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn.gold{background:var(--gold-dim); border-color:var(--gold); color:#1d1710;}
+  .btn.bordeaux{background:var(--bordeaux); border-color:var(--bordeaux-light); color:var(--cream);}
+  .btn:disabled{opacity:.45; cursor:default;}
+
+  /* ---------- main list ---------- */
+  main{padding:14px 16px 110px;}
+  .empty{
+    text-align:center; color:var(--cream-dim); padding:60px 20px;
+    border:1px dashed var(--stone-600); border-radius:14px; margin-top:20px;
+  }
+  .empty .serif{font-size:19px; color:var(--cream); display:block; margin-bottom:6px;}
+
+  .grid{display:flex; flex-direction:column; gap:10px;}
+  .card{
+    background:var(--stone-900);
+    border:1px solid var(--stone-700);
+    border-radius:14px;
+    padding:12px;
+    display:flex; gap:12px;
+    position:relative;
+  }
+  .thumbs{display:flex; gap:6px; flex:none;}
+  .thumb{
+    width:52px; height:70px; border-radius:6px; overflow:hidden;
+    background:var(--stone-800); border:1px solid var(--stone-700);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .thumb img{width:100%; height:100%; object-fit:cover;}
+  .thumb.empty-thumb{color:var(--stone-600); font-size:10px; text-align:center;}
+
+  .card-body{flex:1; min-width:0;}
+  .card-name{
+    font-size:15px; font-weight:600; margin:0 0 2px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .card-note{font-size:12px; color:var(--cream-dim); margin:0 0 8px; line-height:1.35;}
+  .qty-row{display:flex; align-items:center; gap:10px;}
+  .qty-btn{
+    width:26px; height:26px; border-radius:7px;
+    background:var(--stone-800); border:1px solid var(--stone-600); color:var(--cream);
+    font-size:15px; line-height:1;
+  }
+  .qty-val{font-size:16px; font-variant-numeric:tabular-nums; min-width:20px; text-align:center;}
+  .qty-label{font-size:11px; color:var(--cream-dim);}
+  .card-top{position:absolute; top:10px; right:10px; display:flex; gap:6px;}
+  .icon-btn{ background:transparent; color:var(--cream-dim); font-size:14px; padding:2px 6px; border-radius:6px; }
+
+  /* ---------- fab ---------- */
+  .fab{
+    position:fixed; bottom:22px; right:18px; z-index:30;
+    background:var(--bordeaux); color:var(--cream);
+    border:1px solid var(--bordeaux-light);
+    width:58px; height:58px; border-radius:50%;
+    font-size:28px; box-shadow:0 6px 18px rgba(0,0,0,.5);
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  /* ---------- modal ---------- */
+  .overlay{ position:fixed; inset:0; background:rgba(10,9,8,.72); z-index:40; display:flex; align-items:flex-end; }
+  .sheet{
+    background:var(--stone-900); border-top:1px solid var(--stone-700);
+    border-radius:18px 18px 0 0; width:100%; max-height:92vh; overflow-y:auto;
+    padding:18px 16px 24px; animation:up .18s ease-out;
+  }
+  @keyframes up{from{transform:translateY(20px); opacity:0;} to{transform:translateY(0); opacity:1;}}
+  .sheet h2{margin:0 0 14px; font-size:18px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:12px; color:var(--cream-dim); margin-bottom:6px;}
+  input[type=text], input[type=number], input[type=password], textarea{
+    width:100%; background:var(--stone-800); border:1px solid var(--stone-600);
+    color:var(--cream); padding:10px 11px; border-radius:9px; font-size:14px;
+    font-family:inherit;
+  }
+  textarea{resize:vertical; min-height:50px;}
+
+  .photo-row{display:flex; gap:10px;}
+  .photo-slot{
+    flex:1; aspect-ratio:3/4; border-radius:10px; border:1.5px dashed var(--stone-600);
+    background:var(--stone-800); display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:6px; color:var(--cream-dim); font-size:12px; overflow:hidden;
+    position:relative;
+  }
+  .photo-slot img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover;}
+  .photo-slot .plus{font-size:26px; line-height:1;}
+  .photo-slot input{position:absolute; inset:0; opacity:0; cursor:pointer;}
+  .retake{ position:absolute; bottom:6px; right:6px; background:rgba(23,21,20,.75); color:var(--cream); font-size:10px; padding:3px 7px; border-radius:6px; z-index:2; }
+
+  .sheet-actions{display:flex; gap:10px; margin-top:6px;}
+  .sheet-actions .btn{flex:1; justify-content:center; padding:11px;}
+
+  .toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+    background:var(--stone-800); color:var(--cream); border:1px solid var(--stone-600);
+    padding:9px 16px; border-radius:20px; font-size:13px; z-index:60;
+    animation:fade 2.6s ease forwards;
+  }
+  @keyframes fade{0%{opacity:0;transform:translate(-50%,8px);}10%{opacity:1;transform:translate(-50%,0);}85%{opacity:1;}100%{opacity:0;}}
+
+  .hint{
+    font-size:11.5px; color:var(--cream-dim); background:var(--stone-800);
+    border:1px solid var(--stone-700); border-radius:10px; padding:10px 12px; margin:14px 0 0;
+    line-height:1.5;
+  }
+  input[type=file]{display:none;}
+  .file-btn{width:100%; text-align:center;}
+</style>
+</head>
+<body>
+
+<div id="lockScreen">
+  <div class="lock-box">
+    <span class="serif">Cave à vin</span>
+    <div class="lock-sub">Entre le mot de passe pour accéder à l'inventaire</div>
+    <div class="lock-err" id="lockErr"></div>
+    <input type="password" id="lockInput" placeholder="Mot de passe" autofocus>
+    <button class="btn bordeaux" id="lockBtn">Déverrouiller</button>
+  </div>
+</div>
+
+<div id="app" style="display:none;">
+  <header>
+    <div class="titlebar">
+      <h1 class="serif">Cave à vin</h1>
+    </div>
+    <div class="count" id="count">0 bouteille</div>
+    <div class="status-row">
+      <span class="pill"><span class="dot"></span><span>enregistré sur cet appareil</span></span>
+    </div>
+    <div class="actions">
+      <button class="btn" id="btnExport">⇩ Exporter</button>
+      <label class="btn file-btn" style="margin:0;">
+        ⇧ Importer
+        <input type="file" id="importInput" accept="application/json">
+      </label>
+      <button class="btn" id="btnLock">🔒 Verrouiller</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="empty" class="empty" style="display:none;">
+      <span class="serif">La cave est vide</span>
+      Ajoute ta première bouteille avec le bouton +
+    </div>
+    <div class="grid" id="grid"></div>
+
+    <div class="hint">
+      Les données sont sauvegardées directement sur cet appareil (elles survivent à la fermeture de la page et fonctionnent hors-ligne). Elles ne se synchronisent pas automatiquement avec un autre téléphone : utilise <strong>Exporter</strong> / <strong>Importer</strong> pour transférer ta cave d'un appareil à l'autre.
+    </div>
+  </main>
+
+  <button class="fab" id="btnAdd">+</button>
+</div>
+
+<div id="modalRoot"></div>
+
+<script>
+(function(){
+  const LOCK_KEY = "cave_unlocked_v1";
+  const DATA_KEY = "cave_bottles_v1";
+
+  const lockScreen = document.getElementById('lockScreen');
+  const appEl = document.getElementById('app');
+  const lockInput = document.getElementById('lockInput');
+  const lockBtn = document.getElementById('lockBtn');
+  const lockErr = document.getElementById('lockErr');
+
+  function unlock(){
+    lockScreen.style.display = 'none';
+    appEl.style.display = 'block';
+    init();
+  }
+
+  async function tryUnlock(){
+    const pwd = lockInput.value;
+    lockErr.textContent = '';
+    lockBtn.disabled = true;
+    lockBtn.textContent = 'Vérification…';
+    try{
+      const res = await fetch('/api/verify', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ password: pwd })
+      });
+      const data = await res.json();
+      if(data && data.ok){
+        sessionStorage.setItem(LOCK_KEY, '1');
+        unlock();
+      } else {
+        lockErr.textContent = 'Mot de passe incorrect';
+        lockInput.value = '';
+        lockInput.focus();
+      }
+    }catch(e){
+      lockErr.textContent = 'Réseau indisponible — impossible de vérifier le mot de passe';
+    }finally{
+      lockBtn.disabled = false;
+      lockBtn.textContent = 'Déverrouiller';
+    }
+  }
+  lockBtn.addEventListener('click', tryUnlock);
+  lockInput.addEventListener('keydown', e=>{ if(e.key === 'Enter') tryUnlock(); });
+
+  document.getElementById('btnLock').addEventListener('click', function(){
+    sessionStorage.removeItem(LOCK_KEY);
+    appEl.style.display = 'none';
+    lockScreen.style.display = 'flex';
+    lockInput.value = '';
+    lockInput.focus();
+  });
+
+  if(sessionStorage.getItem(LOCK_KEY) === '1'){
+    unlock();
+  } else {
+    lockInput.focus();
+  }
+
+  /* ---------- app logic (only runs after unlock via init()) ---------- */
+  let bottles = [];
+  let inited = false;
+
+  function init(){
+    if(inited) return;
+    inited = true;
+    loadBottles();
+    wireApp();
+    render();
+  }
+
+  function loadBottles(){
+    try{
+      const raw = localStorage.getItem(DATA_KEY);
+      bottles = raw ? JSON.parse(raw) : [];
+    }catch(e){ bottles = []; }
+  }
+  function saveBottles(){
+    try{ localStorage.setItem(DATA_KEY, JSON.stringify(bottles)); }
+    catch(e){ toast('Espace de stockage plein ou indisponible'); }
+  }
+
+  function uid(){ return 'b' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+  function toast(msg){
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(()=>t.remove(), 2600);
+  }
+
+  const grid = document.getElementById('grid');
+  const emptyEl = document.getElementById('empty');
+  const countEl = document.getElementById('count');
+
+  function render(){
+    countEl.textContent = bottles.reduce((s,b)=>s+Number(b.qty||0),0) + ' bouteille(s) · ' + bottles.length + ' référence(s)';
+    emptyEl.style.display = bottles.length ? 'none' : 'block';
+    grid.innerHTML = '';
+    bottles.slice().reverse().forEach(b=>{
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <div class="thumbs">
+          <div class="thumb">${b.photo1 ? `<img src="${b.photo1}">` : '<span class="empty-thumb">étiquette</span>'}</div>
+          <div class="thumb">${b.photo2 ? `<img src="${b.photo2}">` : '<span class="empty-thumb">verso</span>'}</div>
+        </div>
+        <div class="card-body">
+          <p class="card-name">${b.name ? escapeHtml(b.name) : 'Sans nom'}</p>
+          ${b.note ? `<p class="card-note">${escapeHtml(b.note)}</p>` : ''}
+          <div class="qty-row">
+            <button class="qty-btn" data-act="dec" data-id="${b.id}">−</button>
+            <span class="qty-val">${b.qty}</span>
+            <button class="qty-btn" data-act="inc" data-id="${b.id}">+</button>
+            <span class="qty-label">en cave</span>
+          </div>
+        </div>
+        <div class="card-top">
+          <button class="icon-btn" data-act="del" data-id="${b.id}">✕</button>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function wireApp(){
+    grid.addEventListener('click', e=>{
+      const btn = e.target.closest('button[data-act]');
+      if(!btn) return;
+      const id = btn.dataset.id;
+      const b = bottles.find(x=>x.id===id);
+      if(!b) return;
+      if(btn.dataset.act==='inc'){ b.qty++; saveBottles(); render(); }
+      if(btn.dataset.act==='dec'){ b.qty=Math.max(0,b.qty-1); saveBottles(); render(); }
+      if(btn.dataset.act==='del'){ bottles = bottles.filter(x=>x.id!==id); saveBottles(); render(); }
+    });
+
+    document.getElementById('btnExport').addEventListener('click', ()=>{
+      const data = JSON.stringify({exported_at:new Date().toISOString(), bottles}, null, 2);
+      const blob = new Blob([data], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'cave-a-vin-' + new Date().toISOString().slice(0,10) + '.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast('Export téléchargé');
+    });
+
+    document.getElementById('importInput').addEventListener('change', e=>{
+      const file = e.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        try{
+          const parsed = JSON.parse(reader.result);
+          const incoming = parsed.bottles || parsed;
+          if(!Array.isArray(incoming)) throw new Error('format invalide');
+          const existingIds = new Set(bottles.map(b=>b.id));
+          let added=0;
+          incoming.forEach(b=>{ if(!existingIds.has(b.id)){ bottles.push(b); added++; } });
+          saveBottles();
+          render();
+          toast(added + ' bouteille(s) importée(s)');
+        }catch(err){ toast('Fichier illisible'); }
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+    });
+
+    document.getElementById('btnAdd').addEventListener('click', openAddModal);
+  }
+
+  function compressImage(file){
+    return new Promise((resolve, reject)=>{
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        const img = new Image();
+        img.onload = ()=>{
+          const maxDim = 900;
+          let w = img.width, h = img.height;
+          if(w > h && w > maxDim){ h = h*(maxDim/w); w = maxDim; }
+          else if(h > maxDim){ w = w*(maxDim/h); h = maxDim; }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.62));
+        };
+        img.onerror = reject;
+        img.src = reader.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function openAddModal(){
+    const state = {photo1:null, photo2:null};
+    const modalRoot = document.getElementById('modalRoot');
+    const overlay = document.createElement('div');
+    overlay.className = 'overlay';
+    overlay.innerHTML = `
+      <div class="sheet">
+        <h2 class="serif">Nouvelle bouteille</h2>
+        <div class="photo-row">
+          <div class="photo-slot" id="slot1">
+            <span class="plus">＋</span><span>Étiquette avant</span>
+            <input type="file" accept="image/*" capture="environment" id="input1">
+          </div>
+          <div class="photo-slot" id="slot2">
+            <span class="plus">＋</span><span>Verso / autre angle</span>
+            <input type="file" accept="image/*" capture="environment" id="input2">
+          </div>
+        </div>
+        <div class="field" style="margin-top:16px;">
+          <label>Nom (optionnel)</label>
+          <input type="text" id="fName" placeholder="ex. Château Margaux 2015">
+        </div>
+        <div class="field">
+          <label>Quantité</label>
+          <input type="number" id="fQty" value="1" min="0" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label>Note (optionnel)</label>
+          <textarea id="fNote" placeholder="emplacement, millésime, remarque…"></textarea>
+        </div>
+        <div class="sheet-actions">
+          <button class="btn" id="btnCancel">Annuler</button>
+          <button class="btn bordeaux" id="btnSave">Enregistrer</button>
+        </div>
+      </div>
+    `;
+    modalRoot.appendChild(overlay);
+
+    function wireSlot(slotId, inputId, key){
+      const slot = overlay.querySelector('#'+slotId);
+      const input = overlay.querySelector('#'+inputId);
+      input.addEventListener('change', async ()=>{
+        const file = input.files[0];
+        if(!file) return;
+        try{
+          const dataUrl = await compressImage(file);
+          state[key] = dataUrl;
+          slot.innerHTML = `<img src="${dataUrl}"><span class="retake">reprendre</span>`;
+          const newInput = document.createElement('input');
+          newInput.type='file'; newInput.accept='image/*'; newInput.capture='environment'; newInput.id=inputId;
+          slot.appendChild(newInput);
+          wireSlot(slotId, inputId, key);
+        }catch(e){ toast('Photo illisible, réessaie'); }
+      });
+    }
+    wireSlot('slot1','input1','photo1');
+    wireSlot('slot2','input2','photo2');
+
+    overlay.querySelector('#btnCancel').addEventListener('click', ()=>overlay.remove());
+    overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
+
+    overlay.querySelector('#btnSave').addEventListener('click', ()=>{
+      const b = {
+        id: uid(),
+        name: overlay.querySelector('#fName').value.trim(),
+        qty: Math.max(0, parseInt(overlay.querySelector('#fQty').value)||0),
+        note: overlay.querySelector('#fNote').value.trim(),
+        photo1: state.photo1,
+        photo2: state.photo2
+      };
+      bottles.push(b);
+      saveBottles();
+      render();
+      overlay.remove();
+      toast('Bouteille ajoutée');
+    });
+  }
+
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', ()=>{
+      navigator.serviceWorker.register('sw.js').catch(()=>{});
+    });
+  }
+})();
+</script>
+</body>
+</html>
