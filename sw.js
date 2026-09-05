@@ -20,6 +20,7 @@ self.addEventListener('activate', event => {
 // Cache-first : sert la version en cache, et la met à jour en arrière-plan si le réseau répond.
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
+  if (!event.request.url.startsWith('http')) return; // ignore chrome-extension:// etc.
   event.respondWith(
     caches.match(event.request).then(cached => {
       const network = fetch(event.request)

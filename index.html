@@ -192,8 +192,10 @@
     <span class="serif">Cave à vin</span>
     <div class="lock-sub">Entre le mot de passe pour accéder à l'inventaire</div>
     <div class="lock-err" id="lockErr"></div>
-    <input type="password" id="lockInput" placeholder="Mot de passe" autofocus>
-    <button class="btn bordeaux" id="lockBtn">Déverrouiller</button>
+    <form id="lockForm">
+      <input type="password" id="lockInput" placeholder="Mot de passe" autocomplete="current-password">
+      <button type="submit" class="btn bordeaux" id="lockBtn">Déverrouiller</button>
+    </form>
   </div>
 </div>
 
@@ -277,8 +279,13 @@
       lockBtn.textContent = 'Déverrouiller';
     }
   }
-  lockBtn.addEventListener('click', tryUnlock);
-  lockInput.addEventListener('keydown', e=>{ if(e.key === 'Enter') tryUnlock(); });
+  document.getElementById('lockForm').addEventListener('submit', e=>{
+    e.preventDefault();
+    tryUnlock();
+  });
+  // Focus manuel (plutôt que l'attribut autofocus, qui peut entrer en conflit
+  // avec le focus déjà géré par le navigateur au chargement de la page).
+  setTimeout(()=>lockInput.focus(), 50);
 
   document.getElementById('btnLock').addEventListener('click', function(){
     sessionStorage.removeItem(LOCK_KEY);
