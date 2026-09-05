@@ -181,7 +181,6 @@
     border:1px solid var(--stone-700); border-radius:10px; padding:10px 12px; margin:14px 0 0;
     line-height:1.5;
   }
-  input[type=file]{display:none;}
   .file-btn{width:100%; text-align:center;}
 </style>
 </head>
@@ -212,7 +211,7 @@
       <button class="btn" id="btnExport">⇩ Exporter</button>
       <label class="btn file-btn" style="margin:0;">
         ⇧ Importer
-        <input type="file" id="importInput" accept="application/json">
+        <input type="file" id="importInput" style="display:none;" accept="application/json">
       </label>
       <button class="btn" id="btnLock">🔒 Verrouiller</button>
     </div>
@@ -456,11 +455,11 @@
         <div class="photo-row">
           <div class="photo-slot" id="slot1">
             <span class="plus">＋</span><span>Étiquette avant</span>
-            <input type="file" accept="image/*" capture="environment" id="input1">
+            <input type="file" accept="image/*" capture id="input1">
           </div>
           <div class="photo-slot" id="slot2">
             <span class="plus">＋</span><span>Verso / autre angle</span>
-            <input type="file" accept="image/*" capture="environment" id="input2">
+            <input type="file" accept="image/*" capture id="input2">
           </div>
         </div>
         <div class="field" style="margin-top:16px;">
